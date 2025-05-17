@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+	<body>
+		<h2>Minos</h2>
+		<div id="demo">
+			<h3>Card Name(s):</h3>
+			<textarea id="card_names" style="width: 250px; height: 150px"></textarea>
+			<h3>Orcale Text Search:</h3>
+			<textarea id="oracle_text" style="width: 250px; height: 150px"></textarea>
+			<div style="margin-bottom: 8px">
+				<button type="button" onclick="loadXMLDoc()">Search</button>
+			</div>
+			<div id="image_gallery"></div>
+		</div>
+
+		<script>
+			function loadXMLDoc() {
+				const oldGallery = document.getElementById("image_gallery");
+				while (oldGallery.firstChild) {
+					oldGallery.removeChild(oldGallery.firstChild);
+				}
+
+				const cardNames = document.getElementById("card_names").value;
+				const cardNamesCollection = cardNames.split(/\r?\n/);
+				for (let i = 0; i < cardNamesCollection.length; i++) {
+					const card = cardNamesCollection[i];
+					setTimeout(function () {
+						console.log("looping: " + card);
+						const xhttp = new XMLHttpRequest();
+						xhttp.onreadystatechange = function () {
+							// This is where all our content will get added to
+							const imageGallery = document.getElementById("image_gallery");
+
+							if (this.readyState == 4 && this.status == 200) {
+								// document.getElementById("demo").innerHTML =
+								//     this.responseText;
+								const cardObjs = JSON.parse(this.responseText);
+
+								console.log("request complete");
+								console.log(cardObjs);
+
+								// extract the images
+								for (const cardObj of cardObjs.data) {
+									const image = cardObj.image_uris.normal;
+
+									// add the image to the existing image containers
+									const node = document.createElement("img");
+									node.src = image;
+									imageGallery.appendChild(node);
+								}
+							} else if (this.readyState == 4 && this.status == 404) {
+								const node = document.createTextNode("No legal cards found");
+								imageGallery.appendChild(node);
+							}
+						};
+
+						console.log("searching for " + card);
+						const oracleText = document.getElementById("oracle_text").value;
+						const setModifer =
+							"legal:modern (set:dsk OR set:blb OR set:afr OR set:akh OR set:jou OR set:rtr OR set:isd OR set:som OR set:m14 OR set:ltr)";
+						const oracleQuery = oracleText ? "oracle:" + oracleText : "";
+						const queryString = card + " " + oracleQuery + " " + setModifer;
+						xhttp.open(
+							"GET",
+							"https://api.scryfall.com/cards/search?order=cmc&q=" +
+								encodeURIComponent(queryString),
+							true
+						);
+						xhttp.send();
+					}, i * 1000);
+				}
+			}
+		</script>
+	</body>
+</html>
