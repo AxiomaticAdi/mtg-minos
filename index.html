@@ -127,6 +127,25 @@
 					flex-direction: column;
 				}
 			}
+
+			input[type="text"],
+			input[type="number"],
+			select {
+				padding: 8px;
+				border: 1px solid #ccc;
+				border-radius: 4px;
+				width: 100%;
+				font-size: 1rem;
+				box-sizing: border-box;
+				transition: border-color 0.3s;
+			}
+
+			input[type="text"]:focus,
+			input[type="number"]:focus,
+			select:focus {
+				border-color: var(--secondary-color);
+				outline: none;
+			}
 		</style>
 	</head>
 	<body>
@@ -139,17 +158,50 @@
 				<div class="search-section">
 					<div class="search-box">
 						<h3>Card Name(s):</h3>
-						<textarea
-							id="card_names"
-							placeholder="Enter card names (one per line)"
-						></textarea>
+						<input type="text" id="card_names" placeholder="Enter card names (comma separated)" />
 					</div>
 					<div class="search-box">
 						<h3>Oracle Text Search:</h3>
-						<textarea
-							id="oracle_text"
-							placeholder="Enter oracle text to search for"
-						></textarea>
+						<input type="text" id="oracle_text" placeholder="Enter oracle text keywords" />
+					</div>
+				</div>
+
+				<div class="search-section">
+					<div class="search-box">
+						<h3>Type Filter:</h3>
+						<input type="text" id="type_filter" placeholder="Enter a type (e.g. Zombie)" style="width: 100%; padding: 10px;" />
+					</div>
+
+					<div class="search-box">
+						<h3>Mana Value Filter:</h3>
+						<div style="display: flex; gap: 10px;">
+							<select id="mv_operator">
+								<option value="=">==</option>
+								<option value=">=">>=</option>
+								<option value=">">&gt;</option>
+								<option value="<=">&lt;=</option>
+								<option value="<">&lt;</option>
+							</select>
+							<input type="number" id="mana_value" min="0" placeholder="Mana Value" />
+						</div>
+					</div>
+				</div>
+
+				<div class="search-section">
+					<div class="search-box">
+						<h3>Color Filter:</h3>
+						<div style="display: flex; gap: 10px; flex-wrap: wrap;">
+							<label><input type="checkbox" value="w" class="color-filter" /> White</label>
+							<label><input type="checkbox" value="u" class="color-filter" /> Blue</label>
+							<label><input type="checkbox" value="b" class="color-filter" /> Black</label>
+							<label><input type="checkbox" value="r" class="color-filter" /> Red</label>
+							<label><input type="checkbox" value="g" class="color-filter" /> Green</label>
+							<select id="color_mode">
+								<option value="exact">Exactly these colors</option>
+								<option value="atleast">At least these colors</option>
+								<option value="atmost">At most these colors</option>
+							</select>
+						</div>
 					</div>
 				</div>
 				<div>
@@ -172,59 +224,73 @@
 					}
 
 					const cardNames = document.getElementById("card_names").value;
-					const cardNamesCollection = cardNames.split(/\r?\n/);
-					for (let i = 0; i < cardNamesCollection.length; i++) {
-						const card = cardNamesCollection[i];
-						setTimeout(function () {
-							console.log("looping: " + card);
-							const xhttp = new XMLHttpRequest();
-							xhttp.onreadystatechange = function () {
-								// This is where all our content will get added to
-								const imageGallery = document.getElementById("image_gallery");
+					const oracleText = document.getElementById("oracle_text").value.trim();
+					const typeFilter = document.getElementById("type_filter").value.trim();
+					const manaValue = document.getElementById("mana_value").value.trim();
+					const mvOperator = document.getElementById("mv_operator").value;
+					const colorMode = document.getElementById("color_mode").value;
+					const checkedColors = Array.from(document.querySelectorAll(".color-filter:checked")).map(cb => cb.value).join("");
 
-								if (this.readyState == 4 && this.status == 200) {
-									// document.getElementById("demo").innerHTML =
-									//     this.responseText;
-									const cardObjs = JSON.parse(this.responseText);
+					// Prepare query parts
+					const queryParts = [];
 
-									console.log("request complete");
-									console.log(cardObjs);
+					if (oracleText) queryParts.push(`oracle:"${oracleText}"`);
+					if (typeFilter) queryParts.push(`t:${typeFilter}`);
+					if (manaValue) queryParts.push(`mv${mvOperator}${manaValue}`);
+					if (checkedColors) {
+						if (colorMode === "exact") queryParts.push(`c:${checkedColors}`);
+						else if (colorMode === "atleast") queryParts.push(`color>=${checkedColors}`);
+						else if (colorMode === "atmost") queryParts.push(`color<=${checkedColors}`);
+					}
 
-									// extract the images
-									for (const cardObj of cardObjs.data) {
-										const image = cardObj.image_uris.normal;
+					// Add set legality
+					const setModifier = "(legal:modern) (set:dsk OR set:blb OR set:afr OR set:akh OR set:jou OR set:rtr OR set:isd OR set:som OR set:m14 OR set:ltr)";
+					queryParts.push(setModifier);
 
-										// add the image to the existing image containers
-										const node = document.createElement("img");
-										node.src = image;
-										node.alt = cardObj.name;
-										node.title = cardObj.name;
-										imageGallery.appendChild(node);
-									}
-								} else if (this.readyState == 4 && this.status == 404) {
-									const errorMsg = document.createElement("p");
-									errorMsg.textContent =
-										"No legal cards found for '" + card + "'";
-									errorMsg.style.color = "var(--accent-color)";
-									errorMsg.style.fontWeight = "bold";
-									imageGallery.appendChild(errorMsg);
+					const cardNamesCollection = cardNames.split(",").map(c => c.trim()).filter(c => c);
+
+					// If user entered card names, loop and search individually
+					if (cardNamesCollection.length > 0) {
+						for (let i = 0; i < cardNamesCollection.length; i++) {
+							const card = cardNamesCollection[i];
+							setTimeout(() => {
+								const query = [card, ...queryParts].join(" ");
+								fetchCardData(query);
+							}, i * 1000);
+						}
+					} else {
+						// If no names provided, run a single query using just other filters
+						const query = queryParts.join(" ");
+						fetchCardData(query);
+					}
+
+					// Helper function
+					function fetchCardData(query) {
+						console.log("searching for:", query);
+						const xhttp = new XMLHttpRequest();
+						xhttp.onreadystatechange = function () {
+							const imageGallery = document.getElementById("image_gallery");
+							if (this.readyState == 4 && this.status == 200) {
+								const cardObjs = JSON.parse(this.responseText);
+								for (const cardObj of cardObjs.data) {
+									if (!cardObj.image_uris) continue;
+									const image = cardObj.image_uris.normal;
+									const node = document.createElement("img");
+									node.src = image;
+									node.alt = cardObj.name;
+									node.title = cardObj.name;
+									imageGallery.appendChild(node);
 								}
-							};
-
-							console.log("searching for " + card);
-							const oracleText = document.getElementById("oracle_text").value;
-							const setModifer =
-								"legal:modern (set:dsk OR set:blb OR set:afr OR set:akh OR set:jou OR set:rtr OR set:isd OR set:som OR set:m14 OR set:ltr)";
-							const oracleQuery = oracleText ? "oracle:" + oracleText : "";
-							const queryString = card + " " + oracleQuery + " " + setModifer;
-							xhttp.open(
-								"GET",
-								"https://api.scryfall.com/cards/search?order=cmc&q=" +
-									encodeURIComponent(queryString),
-								true
-							);
-							xhttp.send();
-						}, i * 1000);
+							} else if (this.readyState == 4 && this.status == 404) {
+								const errorMsg = document.createElement("p");
+								errorMsg.textContent = "No legal cards found for query.";
+								errorMsg.style.color = "var(--accent-color)";
+								errorMsg.style.fontWeight = "bold";
+								imageGallery.appendChild(errorMsg);
+							}
+						};
+						xhttp.open("GET", "https://api.scryfall.com/cards/search?order=cmc&q=" + encodeURIComponent(query), true);
+						xhttp.send();
 					}
 				}
 			</script>
