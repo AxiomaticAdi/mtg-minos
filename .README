@@ -1,0 +1,49 @@
+# Minos - Piñata Party Chaos Standard Deck Builder
+
+## Overview
+
+Minos is a simple web application designed to help Magic: The Gathering (MTG) players brew and explore deck ideas for the Piñata Party Chaos Standard (PPCS) format—a unique, unsolved, brew-friendly variation of MTG's Standard format. The PPCS format utilizes a custom set rotation to encourage creativity and innovation in deckbuilding.
+
+The application allows players to easily search for MTG cards legal within the Piñata Party Chaos Standard format, either by card name or oracle text.
+
+## Live Demo
+
+Explore the app live at:
+👉 [https://axiomaticadi.github.io/mtg-minos/](https://axiomaticadi.github.io/mtg-minos/)
+
+## Features
+
+- **Card Name Search:** Find specific MTG cards by name.
+- **Oracle Text Search:** Discover cards by searching their oracle text for relevant abilities or keywords.
+- **Visual Results:** Results displayed as clear, high-quality images for quick visual reference.
+- **Piñata Party Legal Cards:** Queries automatically restricted to cards legal in the current Piñata Party Chaos Standard set rotation.
+
+## Technologies Used
+
+- HTML/CSS for the responsive, user-friendly interface.
+- JavaScript for interactive functionality.
+- Scryfall API for retrieving card images and data.
+
+## How to Use
+
+1. Visit the [Minos app](https://axiomaticadi.github.io/mtg-minos/).
+2. Enter one or more card names (each on a separate line) or input text to search card oracle abilities.
+3. Click the "Search Cards" button.
+4. View the resulting images and card details.
+
+## Piñata Party Chaos Standard Format
+
+The Piñata Party Chaos Standard format is a custom MTG format inspired by the official "Standard" gameplay rules, featuring a unique rotation of MTG sets. This ensures a continually fresh and unsolved meta, ideal for creative deck builders.
+
+**Current set rotation includes:**
+
+- DSK
+- BLB
+- AFR
+- AKH
+- JOU
+- RTR
+- ISD
+- SOM
+- M14
+- LTR
