@@ -147,12 +147,54 @@
 				border-color: var(--secondary-color);
 				outline: none;
 			}
+
+			.set-icons {
+				display: flex;
+				justify-content: center;
+				flex-wrap: wrap;
+				gap: 12px;
+				margin: 15px 0 20px 0;
+			}
+
+			.set-icons img {
+				width: 40px;
+				height: 40px;
+				transition: transform 0.3s ease;
+				cursor: default;
+			}
+
+			.set-icons img:hover {
+				transform: scale(1.2);
+			}
+
+			.set-name-display {
+				text-align: center;
+				font-weight: bold;
+				color: var(--primary-color);
+				font-size: 1.1rem;
+				height: 24px; /* Prevent layout shift */
+				transition: opacity 0.3s;
+				margin-top: 8px;
+			}
 		</style>
 	</head>
 	<body>
 		<div class="top-container">
 			<header>
 				<h2>Minos</h2>
+				<div class="set-icons">
+					<img src="https://svgs.scryfall.io/sets/dsk.svg" alt="Duskmourn: House of Horror" title="Duskmourn: House of Horror" onmouseover="updateSetName('Duskmourn: House of Horror')" onmouseout="clearSetName()" />
+					<img src="https://svgs.scryfall.io/sets/blb.svg" alt="Bloomburrow" title="Bloomburrow" onmouseover="updateSetName('Bloomburrow')" onmouseout="clearSetName()" />
+					<img src="https://svgs.scryfall.io/sets/afr.svg" alt="Adventures in the Forgotten Realms" title="Adventures in the Forgotten Realms" onmouseover="updateSetName('Adventures in the Forgotten Realms')" onmouseout="clearSetName()" />
+					<img src="https://svgs.scryfall.io/sets/akh.svg" alt="Amonkhet" title="Amonkhet" onmouseover="updateSetName('Amonkhet')" onmouseout="clearSetName()" />
+					<img src="https://svgs.scryfall.io/sets/jou.svg" alt="Journey into Nyx" title="Journey into Nyx" onmouseover="updateSetName('Journey into Nyx')" onmouseout="clearSetName()" />
+					<img src="https://svgs.scryfall.io/sets/rtr.svg" alt="Return to Ravnica" title="Return to Ravnica" onmouseover="updateSetName('Return to Ravnica')" onmouseout="clearSetName()" />
+					<img src="https://svgs.scryfall.io/sets/isd.svg" alt="Innistrad" title="Innistrad" onmouseover="updateSetName('Innistrad')" onmouseout="clearSetName()" />
+					<img src="https://svgs.scryfall.io/sets/som.svg" alt="Scars of Mirrodin" title="Scars of Mirrodin" onmouseover="updateSetName('Scars of Mirrodin')" onmouseout="clearSetName()" />
+					<img src="https://svgs.scryfall.io/sets/m14.svg" alt="Magic 2014 Core Set" title="Magic 2014 Core Set" onmouseover="updateSetName('Magic 2014 Core Set')" onmouseout="clearSetName()" />
+					<img src="https://svgs.scryfall.io/sets/ltr.svg" alt="The Lord of the Rings: Tales of Middle-earth" title="The Lord of the Rings: Tales of Middle-earth" onmouseover="updateSetName('The Lord of the Rings: Tales of Middle-earth')" onmouseout="clearSetName()" />
+				</div>
+				<div id="set-name-display" class="set-name-display"></div>
 				<h3>Search for MTG cards legal in Piñata Party Chaos Standard S1</h3>
 			</header>
 			<div id="demo">
@@ -238,23 +280,54 @@
 						</div>
 					</div>
 				</div>
-				<div>
-					<button type="button" onclick="loadXMLDoc()">Search Cards</button>
-				</div>
+					<div style="display: flex; align-items: center; gap: 10px;">
+						<button type="button" onclick="loadXMLDoc()">Search Cards</button>
+						<div id="spinner" style="display: none;">
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="24"
+								height="24"
+								viewBox="0 0 100 100"
+								preserveAspectRatio="xMidYMid"
+								style="background: none"
+							>
+								<circle
+									cx="50"
+									cy="50"
+									fill="none"
+									stroke="#3498db"
+									stroke-width="10"
+									r="35"
+									stroke-dasharray="164.93361431346415 56.97787143782138"
+								>
+									<animateTransform
+										attributeName="transform"
+										type="rotate"
+										repeatCount="indefinite"
+										dur="1s"
+										values="0 50 50;360 50 50"
+										keyTimes="0;1"
+									></animateTransform>
+								</circle>
+							</svg>
+						</div>
+					</div>
 				<div id="image_gallery"></div>
 			</div>
 
 			<script>
 				function loadXMLDoc() {
 					// Show loading indicator
+					const spinner = document.getElementById("spinner");
+					spinner.style.display = "block"; // Show spinner
+
 					const imageGallery = document.getElementById("image_gallery");
 					const loadingMsg = document.createElement("p");
 					loadingMsg.textContent = "Searching for cards...";
 					loadingMsg.className = "loading";
 					imageGallery.appendChild(loadingMsg);
-					const oldGallery = document.getElementById("image_gallery");
-					while (oldGallery.firstChild) {
-						oldGallery.removeChild(oldGallery.firstChild);
+					while (imageGallery.firstChild) {
+						imageGallery.removeChild(imageGallery.firstChild);
 					}
 
 					const cardNames = document.getElementById("card_names").value;
@@ -324,37 +397,57 @@
 
 					// Helper function
 					function fetchCardData(query) {
-						console.log("searching for:", query);
-						const xhttp = new XMLHttpRequest();
-						xhttp.onreadystatechange = function () {
-							const imageGallery = document.getElementById("image_gallery");
-							if (this.readyState == 4 && this.status == 200) {
-								const cardObjs = JSON.parse(this.responseText);
-								for (const cardObj of cardObjs.data) {
-									if (!cardObj.image_uris) continue;
-									const image = cardObj.image_uris.normal;
-									const node = document.createElement("img");
-									node.src = image;
-									node.alt = cardObj.name;
-									node.title = cardObj.name;
-									imageGallery.appendChild(node);
+							const xhttp = new XMLHttpRequest();
+							xhttp.onreadystatechange = function () {
+								const imageGallery = document.getElementById("image_gallery");
+
+								if (this.readyState === 4) {
+									spinner.style.display = "none"; // Hide spinner
+
+									if (this.status === 200) {
+										const cardObjs = JSON.parse(this.responseText);
+										for (const cardObj of cardObjs.data) {
+											if (!cardObj.image_uris) continue;
+											const image = cardObj.image_uris.normal;
+											const node = document.createElement("img");
+											node.src = image;
+											node.alt = cardObj.name;
+											node.title = cardObj.name;
+											imageGallery.appendChild(node);
+										}
+									} else if (this.status === 404) {
+										const errorMsg = document.createElement("p");
+										errorMsg.textContent = "No legal cards found for query.";
+										errorMsg.style.color = "var(--accent-color)";
+										errorMsg.style.fontWeight = "bold";
+										imageGallery.appendChild(errorMsg);
+									}
 								}
-							} else if (this.readyState == 4 && this.status == 404) {
-								const errorMsg = document.createElement("p");
-								errorMsg.textContent = "No legal cards found for query.";
-								errorMsg.style.color = "var(--accent-color)";
-								errorMsg.style.fontWeight = "bold";
-								imageGallery.appendChild(errorMsg);
-							}
-						};
-						xhttp.open(
-							"GET",
-							"https://api.scryfall.com/cards/search?order=cmc&q=" +
-								encodeURIComponent(query),
-							true
-						);
-						xhttp.send();
+							};
+							xhttp.open(
+								"GET",
+								"https://api.scryfall.com/cards/search?order=cmc&q=" +
+									encodeURIComponent(query),
+								true
+							);
+							xhttp.send();
+						}
+				}
+
+				document.addEventListener("keydown", function (event) {
+					// Check if Enter was pressed, and not inside a textarea
+					if (event.key === "Enter" && event.target.tagName !== "TEXTAREA") {
+						event.preventDefault(); // Prevent default form submission behavior
+						loadXMLDoc(); // Trigger the search
 					}
+				});
+
+				function updateSetName(name) {
+					document.getElementById("set-name-display").textContent = name;
+				}
+
+				function clearSetName() {
+					document.getElementById("set-name-display").textContent = "";
 				}
 			</script>
 		</div>
